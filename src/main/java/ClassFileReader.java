@@ -1,6 +1,7 @@
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 
 public class ClassFileReader {
@@ -24,12 +25,20 @@ public class ClassFileReader {
         String filePath = classReader.getFilePath();
         try(FileInputStream fis =  new FileInputStream(filePath)) {
             fis.read(cfi.magicNumbers);
-            fis.read(cfi.classVersionMain);
             fis.read(cfi.classVersionSub);
+            fis.read(cfi.classVersionMain);
             fis.read(cps.constantPoolCount);
             int constantDataLength = ClassFileStructure.bytes4ToInt(cps.constantPoolCount);
             readConstantData(fis,constantDataLength);
-            cps.printConstantPoolData();
+            fis.read(cfi.accessFlags);
+            fis.read(cfi.thisClass);
+            fis.read(cfi.parentClass);
+            fis.read(cfi.interfaceCount);
+            int interfaceDataLength = ClassFileStructure.bytes4ToInt(cfi.interfaceCount);
+            readInterfaces(fis,interfaceDataLength);
+            fis.read(cfi.filedCount);
+            int fields = ClassFileStructure.bytes4ToInt(cfi.filedCount);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -38,6 +47,11 @@ public class ClassFileReader {
         cfi.printClassVersion();
         System.out.println();
         cps.printConstantPoolCount();
+        cps.printConstantPoolData();
+        System.out.println(cfi.getAccessFlags());
+        System.out.println(ClassFileStructure.ClassFileInfo.getClassInfo(cfi.thisClass));
+        System.out.println(ClassFileStructure.ClassFileInfo.getClassInfo(cfi.parentClass));
+        System.out.println(ClassFileStructure.ClassFileInfo.interfaces);
     }
     public String getFilePath() {
         return filePath;
@@ -70,5 +84,23 @@ public class ClassFileReader {
                 constantDataMap.put(i,allData);
             }
         }
+    }
+    public static void readInterfaces(FileInputStream fis,int length) throws IOException {
+        List<String> interfaces = ClassFileStructure.ClassFileInfo.interfaces;
+        List<Byte> interfacesDataList = ClassFileStructure.ClassFileInfo.interfacesDataList;
+        for (int i = 0; i < length; i++) {
+            byte[] interfaceData = new byte[2];
+            fis.read(interfaceData);
+            interfacesDataList.add(interfaceData[0]);
+            interfacesDataList.add(interfaceData[1]);
+            String interfaceInfo = ClassFileStructure.ClassFileInfo.getClassInfo(interfaceData);
+            interfaces.add(interfaceInfo);
+        }
+    }
+    public static void readFieldInfo(FileInputStream fis,int size){
+
+    }
+    public static void readMethodInfo(FileInputStream fis,int size){
+
     }
 }
